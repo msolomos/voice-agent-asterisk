@@ -1,0 +1,15 @@
+#!/bin/bash
+# Smart routing based on Voice Agent response
+
+UNIQUE_ID="$1"
+DEFAULT_EXT="924"
+
+# Check if routing file exists from Voice Agent
+if [ -f "/tmp/route_${UNIQUE_ID}" ]; then
+    ROUTE_EXT=$(cat /tmp/route_${UNIQUE_ID})
+    echo "SET VARIABLE ROUTE_EXT $ROUTE_EXT"
+    echo "Routing to: $ROUTE_EXT" >> /tmp/voice_agent.log
+else
+    echo "SET VARIABLE ROUTE_EXT $DEFAULT_EXT"
+    echo "Default routing to: $DEFAULT_EXT" >> /tmp/voice_agent.log
+fi

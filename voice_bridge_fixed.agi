@@ -1,0 +1,56 @@
+#!/bin/bash
+set -x
+exec 2>> /tmp/voice_agent_debug.log
+
+UNIQUE_ID="$1"
+VOICE_AGENT="http://192.168.2.246:5000"
+AUDIO_FILE="/tmp/voice_input_${UNIQUE_ID}.wav"
+RESPONSE_FILE="/tmp/voice_response_${UNIQUE_ID}.wav"
+echo "Processing audio for call: $UNIQUE_ID" >> /tmp/voice_agent.log
+if [ -f "$AUDIO_FILE" ]; then
+    # Get response with headers
+    curl -s -X POST "$VOICE_AGENT/process_audio" \
+        -F "audio=@$AUDIO_FILE" \
+        -D /tmp/headers_${UNIQUE_ID} \
+        --output "$RESPONSE_FILE"
+    
+    # ΝΕΟΣ: Convert MP3 to proper WAV για Asterisk
+    if [ -f "$RESPONSE_FILE" ]; then
+        echo "Converting MP3 to WAV for Asterisk..." >> /tmp/voice_agent.log
+        mpg123 -r 8000 -m -w "${RESPONSE_FILE}.converted" "$RESPONSE_FILE" 2>/dev/null
+        
+				if [ $? -eq 0 ]; then
+            mv "${RESPONSE_FILE}.converted" "$RESPONSE_FILE"
+						sync  # εξασφαλίζει ότι έχει γραφτεί στο δίσκο
+						sleep 0.5  # μικρό delay για ασφαλή αναγνώριση από Asterisk
+            echo "MP3 to WAV conversion successful" >> /tmp/voice_agent.log
+        else
+            echo "MP3 conversion failed, keeping original" >> /tmp/voice_agent.log
+        fi
+    fi
+    
+    # Extract routing info (πιο απλός τρόπος)
+    AGENT_DATA=$(grep "x-agent-data:" /tmp/headers_${UNIQUE_ID})
+    echo "Agent Data: $AGENT_DATA" >> /tmp/voice_agent.log
+    
+    # Πιο απλό parsing - ψάχνουμε για τις λέξεις
+    if echo "$AGENT_DATA" | grep -q "tech_support"; then
+        EXTENSION="907"
+        echo "DETECTED: tech_support -> $EXTENSION" >> /tmp/voice_agent.log
+    elif echo "$AGENT_DATA" | grep -q "sales"; then
+        EXTENSION="924"
+        echo "DETECTED: sales -> $EXTENSION" >> /tmp/voice_agent.log
+    elif echo "$AGENT_DATA" | grep -q "accounting"; then
+        EXTENSION="901"
+        echo "DETECTED: accounting -> $EXTENSION" >> /tmp/voice_agent.log
+    else
+        EXTENSION="924"
+        echo "DETECTED: unknown/general -> $EXTENSION" >> /tmp/voice_agent.log
+    fi
+    
+    # Write extension to route file
+    echo "$EXTENSION" > /tmp/route_${UNIQUE_ID}
+    
+    echo "Final routing: $EXTENSION" >> /tmp/voice_agent.log
+    echo "Audio processing complete" >> /tmp/voice_agent.log
+fi

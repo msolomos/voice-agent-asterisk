@@ -1,0 +1,13 @@
+[voice-agent-test]
+exten => 997,1,Answer()
+exten => 997,2,AGI(googletts.agi,"Γειά σας, πως μπορώ να βοηθήσω;",el)
+exten => 997,3,Wait(1)
+exten => 997,4,Record(/tmp/voice_input_${UNIQUEID}.wav,3,10,q)
+exten => 997,5,AGI(voice_bridge_fixed.agi,${UNIQUEID})
+exten => 997,6,System(cp /tmp/voice_response_${UNIQUEID}.wav /tmp/final_response.wav)
+exten => 997,7,Wait(1)
+exten => 997,8,Playback(/tmp/final_response)
+exten => 997,9,GotoIf($["${STAT(e,/tmp/final_response.wav)}" != "1"]?998,1)
+exten => 997,10,AGI(voice_route.agi,${UNIQUEID})
+exten => 997,11,Goto(ext-local,${ROUTE_EXT},1)
+exten => 997,12,Hangup()
