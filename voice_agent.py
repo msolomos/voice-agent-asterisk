@@ -324,6 +324,35 @@ async def detect_text_intent_openai(data: dict):
             "error": str(e)
         }
 
+
+@app.post("/speak")
+async def speak_from_text(data: dict):
+    """Simple OpenAI TTS API from plain text"""
+    try:
+        text = data.get("text")
+        if not text:
+            raise HTTPException(status_code=400, detail="Missing 'text'")
+        
+        voice = data.get("voice", "alloy")  # alloy, echo, fable, onyx, nova, shimmer
+        model = data.get("model", "tts-1")
+        response_format = data.get("format", "mp3")
+
+        tts_response = openai.Audio.create(
+            model=model,
+            input=text,
+            voice=voice,
+            response_format=response_format
+        )
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+            tmp.write(tts_response.content)
+            return FileResponse(tmp.name, media_type="audio/mpeg")
+
+    except Exception as e:
+        logger.error(f"/speak error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
