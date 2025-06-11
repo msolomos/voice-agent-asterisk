@@ -1,0 +1,44 @@
+#!/bin/bash
+set -x
+exec 2>> /tmp/voice_agent_debug.log
+
+UNIQUE_ID="$1"
+VOICE_AGENT="http://192.168.2.246:5000"
+TEXT="Γειά σας, πώς μπορώ να σας βοηθήσω;"
+LANG="el"
+SPEED="1.1"
+
+MP3_FILE="/tmp/welcome_${UNIQUE_ID}.mp3"
+WAV_FILE="/tmp/welcome_${UNIQUE_ID}.wav"
+
+echo "Generating welcome message for call: $UNIQUE_ID" >> /tmp/voice_agent.log
+
+# Κλήση στο OpenAI TTS API
+curl -s -X POST "$VOICE_AGENT/speak" \
+  -H "Content-Type: application/json" \
+  -d "{\"text\":\"$TEXT\",\"lang\":\"$LANG\",\"speed\":$SPEED}" \
+  --output "$MP3_FILE"
+
+# Αν MP3 δεν δημιουργήθηκε
+if [ ! -s "$MP3_FILE" ]; then
+    echo "TTS generation failed for $UNIQUE_ID" >> /tmp/voice_agent.log
+    exit 1
+fi
+
+# Μετατροπή MP3 -> WAV (8000Hz mono για Asterisk)
+mpg123 -r 8000 -m -w "$WAV_FILE" "$MP3_FILE" 2>/dev/null
+if [ $? -eq 0 ]; then
+    sync
+    sleep 0.5
+    echo "Welcome message ready: $WAV_FILE" >> /tmp/voice_agent.log
+else
+    echo "MP3 to WAV conversion failed for $UNIQUE_ID" >> /tmp/voice_agent.log
+    exit 1
+fi
+
+# STREAM FILE για Asterisk
+BASENAME=$(basename "$WAV_FILE" .wav)
+echo "STREAM FILE /tmp/$BASENAME \"\""
+
+# Cleanup μετά από 2 δευτερόλεπτα delay
+(sleep 2 && rm -f "$MP3_FILE" "$WAV_FILE") &
