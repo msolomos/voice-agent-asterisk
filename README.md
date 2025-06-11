@@ -174,6 +174,36 @@ docker-compose logs -f
 curl -f http://localhost:5000/health || echo "Service not healthy"
 ```
 
+
+### Sample Logs from Host
+
+Below is an example of expected logs when a call is processed using `/speak` and `/process_audio`:
+
+voice-agent-1 | INFO:main:Initializing OpenAI client with key: sk-proj-...
+voice-agent-1 | INFO:main:OpenAI API connection verified successfully
+voice-agent-1 | INFO: Started server process [1]
+voice-agent-1 | INFO: Waiting for application startup.
+voice-agent-1 | INFO: Application startup complete.
+voice-agent-1 | INFO: Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+voice-agent-1 | INFO: 192.168.2.2:56721 - "POST /speak HTTP/1.1" 200 OK
+voice-agent-1 | INFO: 127.0.0.1:44230 - "GET /health HTTP/1.1" 200 OK
+voice-agent-1 | INFO:main:Processing with OpenAI...
+voice-agent-1 | INFO:main:OpenAI Transcribed: Γεια σου, θα ήθελα να μιλήσω με το λογιστήριο, παρακαλώ.
+voice-agent-1 | INFO:main:GPT Response: json voice-agent-1 | { voice-agent-1 | "intent": "accounting", voice-agent-1 | "confidence": 0.9, voice-agent-1 | "response": "Σας συνδέω με το λογιστήριο μας. Περιμένετε λίγο.", voice-agent-1 | "name": null voice-agent-1 | } voice-agent-1 |
+voice-agent-1 | INFO:main:TTS audio saved as MP3: /tmp/tmpxmga3m21_response.mp3
+voice-agent-1 | INFO:main:Returning audio file: /tmp/tmpxmga3m21_response.mp3 (exists: True)
+voice-agent-1 | INFO: 192.168.2.2:56722 - "POST /process_audio HTTP/1.1" 200 OK
+
+
+These logs confirm that:
+- `/speak` endpoint returns an MP3 audio stream successfully
+- `/process_audio` processes voice input and generates a TTS response
+- OpenAI API is working correctly
+- Intent is detected and response is synthesized dynamically
+
+
+
+
 ## 📁 Project Structure
 
 ```
