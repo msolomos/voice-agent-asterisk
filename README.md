@@ -5,7 +5,7 @@ An integrated voice assistant system that combines Asterisk PBX with AI to provi
 ## 🚀 Features
 
 - **AI-Powered Voice Recognition**: Uses OpenAI for processing and understanding voice commands
-- **Text-to-Speech**: Text-to-speech conversion with multi-language support
+- **Text-to-Speech**: Text-to-speech conversion with multi-language support (including plain text TTS via `/speak`)
 - **Asterisk Integration**: Full integration with Asterisk PBX for telephone calls
 - **RESTful API**: FastAPI backend for easy extension and integration
 - **Docker Support**: Fully containerized for easy installation and deployment
@@ -142,6 +142,23 @@ Content-Type: multipart/form-data
   "audio_file": "voice_recording.wav",
   "unique_id": "test123"
 }
+
+# Text-to-Speech from Text
+POST http://localhost:5000/speak
+Content-Type: application/json
+
+{
+  "text": "Γειά σας, πώς μπορώ να σας βοηθήσω;",
+  "voice": "alloy",          # optional
+  "model": "tts-1",          # optional
+  "format": "mp3"            # optional
+}
+
+Response:
+Returns a binary MP3 audio stream.
+
+This endpoint is ideal for pre-call prompts such as welcome messages or static announcements that do not require real-time voice analysis.
+
 ```
 
 ### Testing
@@ -464,6 +481,7 @@ For support and questions:
 - **v1.1.0**: Added multi-language support
 - **v1.2.0**: Docker containerization
 - **v1.3.0**: Health monitoring and logging improvements
+- **v1.4.0**: Added `/speak` endpoint for OpenAI TTS from plain text
 
 ## 🙏 Acknowledgments
 
