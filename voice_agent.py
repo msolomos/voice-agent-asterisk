@@ -329,23 +329,34 @@ async def detect_text_intent_openai(data: dict):
 async def speak_from_text(data: dict):
     """Simple OpenAI TTS API from plain text"""
     try:
+        import requests
+
         text = data.get("text")
         if not text:
             raise HTTPException(status_code=400, detail="Missing 'text'")
-        
-        voice = data.get("voice", "alloy")  # alloy, echo, fable, onyx, nova, shimmer
+
+        voice = data.get("voice", "alloy")
         model = data.get("model", "tts-1")
         response_format = data.get("format", "mp3")
 
-        tts_response = openai.Audio.create(
-            model=model,
-            input=text,
-            voice=voice,
-            response_format=response_format
-        )
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": model,
+            "input": text,
+            "voice": voice,
+            "response_format": response_format
+        }
+
+        response = requests.post("https://api.openai.com/v1/audio/speech", headers=headers, json=payload)
+        if response.status_code != 200:
+            raise Exception(f"OpenAI TTS error {response.status_code}: {response.text}")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-            tmp.write(tts_response.content)
+            tmp.write(response.content)
             return FileResponse(tmp.name, media_type="audio/mpeg")
 
     except Exception as e:
